@@ -1,0 +1,17 @@
+# Ignore node modules and enviroment files
+node_modules/
+.env
+.DS_Store
+# Build artifacts
+/dist/
+/build/
+/.next/
+/out/
+
+# API envs
+api/.env
+
+# Client envs
+client/.env
+client/.env.local
+client/.env.*.local

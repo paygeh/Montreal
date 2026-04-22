@@ -1,0 +1,473 @@
+openapi: 3.0.3
+info:
+  title: StudySphere API
+  version: 1.0.0
+  description: |
+    REST API for StudySphere academic planning platform.
+    All database interactions must go through this API.
+
+servers:
+  - url: https://api.studysphere.com
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Profiles
+  - name: Courses
+  - name: Assignments
+  - name: Grades
+  - name: StudySessions
+  - name: GPA
+  - name: Workload
+  - name: Burnout
+
+paths:
+
+  # =========================
+  # PROFILES
+  # =========================
+  /profiles/me:
+    get:
+      tags: [Profiles]
+      summary: Get current user profile
+      responses:
+        200:
+          description: Profile data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+
+    patch:
+      tags: [Profiles]
+      summary: Update profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        200:
+          description: Updated profile
+
+  # =========================
+  # COURSES
+  # =========================
+  /courses:
+    get:
+      tags: [Courses]
+      summary: Get all user courses
+      responses:
+        200:
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Course'
+
+    post:
+      tags: [Courses]
+      summary: Create a course
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseCreate'
+      responses:
+        201:
+          description: Course created
+
+  /courses/{courseId}:
+    patch:
+      tags: [Courses]
+      summary: Update a course
+      parameters:
+        - $ref: '#/components/parameters/courseId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseUpdate'
+      responses:
+        200:
+          description: Updated
+
+    delete:
+      tags: [Courses]
+      summary: Delete a course
+      parameters:
+        - $ref: '#/components/parameters/courseId'
+      responses:
+        204:
+          description: Deleted
+
+  # =========================
+  # ASSIGNMENTS
+  # =========================
+  /assignments:
+    get:
+      tags: [Assignments]
+      summary: Get assignments (optionally filtered by course)
+      parameters:
+        - in: query
+          name: courseId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Assignment list
+
+    post:
+      tags: [Assignments]
+      summary: Create assignment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentCreate'
+      responses:
+        201:
+          description: Created
+
+  /assignments/{assignmentId}:
+    patch:
+      tags: [Assignments]
+      summary: Update assignment
+      parameters:
+        - $ref: '#/components/parameters/assignmentId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentUpdate'
+      responses:
+        200:
+          description: Updated
+
+    delete:
+      tags: [Assignments]
+      summary: Delete assignment
+      parameters:
+        - $ref: '#/components/parameters/assignmentId'
+      responses:
+        204:
+          description: Deleted
+
+  # =========================
+  # GRADES
+  # =========================
+  /grades:
+    post:
+      tags: [Grades]
+      summary: Create grade
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GradeCreate'
+      responses:
+        201:
+          description: Created
+
+  /grades/course/{courseId}:
+    get:
+      tags: [Grades]
+      summary: Get grades for a course
+      parameters:
+        - $ref: '#/components/parameters/courseId'
+      responses:
+        200:
+          description: Grades list
+
+  /grades/{gradeId}:
+    patch:
+      tags: [Grades]
+      summary: Update grade
+      parameters:
+        - $ref: '#/components/parameters/gradeId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GradeUpdate'
+      responses:
+        200:
+          description: Updated
+
+    delete:
+      tags: [Grades]
+      summary: Delete grade
+      parameters:
+        - $ref: '#/components/parameters/gradeId'
+      responses:
+        204:
+          description: Deleted
+
+  # =========================
+  # STUDY SESSIONS
+  # =========================
+  /study-sessions:
+    get:
+      tags: [StudySessions]
+      summary: Get study sessions
+      responses:
+        200:
+          description: Sessions list
+
+    post:
+      tags: [StudySessions]
+      summary: Log study session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudySessionCreate'
+      responses:
+        201:
+          description: Created
+
+  # =========================
+  # GPA
+  # =========================
+  /gpa:
+    get:
+      tags: [GPA]
+      summary: Get GPA records
+      responses:
+        200:
+          description: GPA history
+
+    post:
+      tags: [GPA]
+      summary: Add GPA record
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GpaCreate'
+      responses:
+        201:
+          description: Created
+
+  # =========================
+  # WORKLOAD
+  # =========================
+  /workload:
+    get:
+      tags: [Workload]
+      summary: Get workload records
+      responses:
+        200:
+          description: Workload list
+
+    post:
+      tags: [Workload]
+      summary: Create workload record
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadCreate'
+      responses:
+        201:
+          description: Created
+
+  # =========================
+  # BURNOUT
+  # =========================
+  /burnout-alerts:
+    get:
+      tags: [Burnout]
+      summary: Get burnout alerts
+      responses:
+        200:
+          description: Alerts list
+
+    post:
+      tags: [Burnout]
+      summary: Create burnout alert
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BurnoutCreate'
+      responses:
+        201:
+          description: Created
+
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    courseId:
+      name: courseId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    assignmentId:
+      name: assignmentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    gradeId:
+      name: gradeId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+
+    Profile:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+
+    ProfileUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+
+    Course:
+      type: object
+      properties:
+        course_id:
+          type: string
+        course_name:
+          type: string
+        professor_name:
+          type: string
+        current_grade:
+          type: number
+
+    CourseCreate:
+      type: object
+      required: [course_name]
+      properties:
+        course_name:
+          type: string
+        professor_name:
+          type: string
+
+    CourseUpdate:
+      type: object
+      properties:
+        course_name:
+          type: string
+        professor_name:
+          type: string
+        current_grade:
+          type: number
+
+    AssignmentCreate:
+      type: object
+      required: [course_id, title, estimated_time]
+      properties:
+        course_id:
+          type: string
+        title:
+          type: string
+        due_date:
+          type: string
+          format: date-time
+        estimated_time:
+          type: integer
+        priority_level:
+          type: string
+          enum: [high, medium, low]
+
+    AssignmentUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        status:
+          type: string
+          enum: [started, in progress, completed]
+
+    GradeCreate:
+      type: object
+      required: [course_id, score, weight]
+      properties:
+        course_id:
+          type: string
+        assignment_id:
+          type: string
+        score:
+          type: number
+        weight:
+          type: number
+
+    GradeUpdate:
+      type: object
+      properties:
+        score:
+          type: number
+        weight:
+          type: number
+
+    StudySessionCreate:
+      type: object
+      required: [course_id, duration_minutes]
+      properties:
+        course_id:
+          type: string
+        duration_minutes:
+          type: integer
+
+    GpaCreate:
+      type: object
+      required: [gpa_value, goal_gpa]
+      properties:
+        gpa_value:
+          type: number
+        goal_gpa:
+          type: number
+
+    WorkloadCreate:
+      type: object
+      required: [week_start_date, total_estimated_time]
+      properties:
+        week_start_date:
+          type: string
+          format: date-time
+        total_estimated_time:
+          type: integer
+        workload_intensity:
+          type: string
+          enum: [low, medium, high]
+
+    BurnoutCreate:
+      type: object
+      required: [alert_type, message]
+      properties:
+        workload_id:
+          type: string
+        alert_type:
+          type: string
+        message:
+          type: string
