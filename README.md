@@ -1,4 +1,3 @@
-StudySphere
 StudySphere is a centralized academic planning system designed to help college students reclaim their time. By combining workload visualization with proactive academic monitoring, StudySphere helps students stay organized, improve their performance, and avoid the burnout often associated with heavy course loads.
 
 🚀 Core Mission
