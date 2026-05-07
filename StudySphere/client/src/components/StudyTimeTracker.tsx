@@ -376,20 +376,6 @@ export default function StudyTimeTracker({ studySessions, courses, onSessionAdd,
             </ResponsiveContainer>
           </div>
 
-          {/* Study Efficiency */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold mb-4">Study Efficiency Analysis</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <RechartsBarChart data={getStudyVsPerformanceData()}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="efficiency" fill="#8b5cf6" name="Grade per Hour" />
-              </RechartsBarChart>
-            </ResponsiveContainer>
-          </div>
-
           {/* Performance Insights */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:col-span-2">
             <h3 className="text-lg font-semibold mb-4">Performance Insights</h3>

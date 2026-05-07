@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Routes, Route, Link, Navigate } from 'react-router-dom'
-import { BookOpen, TrendingUp, Clock, BarChart3, AlertTriangle, User, LogOut } from 'lucide-react'
+import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom'
+import { BookOpen, TrendingUp, Clock, BarChart3, AlertTriangle, User, LogOut, X, Zap } from 'lucide-react'
 import TaskList from './components/TaskList'
 import GPATracker from './components/GPATracker'
 import StudyTimeTracker from './components/StudyTimeTracker'
@@ -13,6 +13,18 @@ import { Task, Course, GPARecord, StudySession, WorkloadRecord, OngoingProject, 
 
 function AppContent() {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const quickActions = [
+    { label: 'Manage Tasks',      desc: 'Organize assignments & priorities',  path: '/features/manage-academic-tasks',       icon: BookOpen,      color: 'text-primary-600', bg: 'bg-primary-100',  hover: 'hover:bg-primary-50 hover:border-primary-300' },
+    { label: 'Track GPA',         desc: 'Monitor academic performance',        path: '/features/track-academic-performance',  icon: TrendingUp,    color: 'text-green-600',   bg: 'bg-green-100',    hover: 'hover:bg-green-50 hover:border-green-300' },
+    { label: 'Study Schedule',    desc: 'Plan & log study time',              path: '/features/plan-study-time',             icon: Clock,         color: 'text-purple-600',  bg: 'bg-purple-100',   hover: 'hover:bg-purple-50 hover:border-purple-300' },
+    { label: 'Analyze Workload',  desc: 'Visualize intensity spikes',         path: '/features/analyze-workload',            icon: BarChart3,     color: 'text-blue-600',    bg: 'bg-blue-100',     hover: 'hover:bg-blue-50 hover:border-blue-300' },
+    { label: 'Burnout Monitor',   desc: 'Prevent academic burnout',           path: '/features/monitor-burnout',             icon: AlertTriangle, color: 'text-orange-600',  bg: 'bg-orange-100',   hover: 'hover:bg-orange-50 hover:border-orange-300' },
+    { label: 'User Profile',      desc: 'Customize settings & goals',        path: '/features/manage-user-experience',      icon: User,          color: 'text-indigo-600',  bg: 'bg-indigo-100',   hover: 'hover:bg-indigo-50 hover:border-indigo-300' },
+  ]
+
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: '1',
@@ -392,6 +404,62 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+
+      {/* Directory floating button */}
+      <div className="fixed top-6 left-6 z-40">
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold px-5 py-3 rounded-full shadow-lg transition-all hover:scale-105"
+        >
+          <Zap className="h-5 w-5" />
+          Directory
+        </button>
+      </div>
+
+      {/* Backdrop */}
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
+
+      {/* Slide-out drawer */}
+      <div className={`fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+        drawerOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-primary-600" />
+            <h2 className="text-lg font-bold text-gray-900">Directory</h2>
+          </div>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-4 space-y-2 overflow-y-auto h-[calc(100%-73px)]">
+          {quickActions.map(({ label, desc, path, icon: Icon, color, bg, hover }) => (
+            <button
+              key={path}
+              onClick={() => { setDrawerOpen(false); navigate(path) }}
+              className={`w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 ${hover} transition-all group text-left`}
+            >
+              <div className={`p-3 ${bg} rounded-xl shrink-0`}>
+                <Icon className={`h-5 w-5 ${color}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-gray-900 text-sm">{label}</div>
+                <div className="text-xs text-gray-500 truncate">{desc}</div>
+              </div>
+              <span className={`${color} opacity-0 group-hover:opacity-100 transition-opacity text-lg`}>→</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -402,9 +470,6 @@ function AppContent() {
             <nav className="flex space-x-8">
               <Link to="/" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                 Dashboard
-              </Link>
-              <Link to="/features" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                Features
               </Link>
             </nav>
             <div className="flex items-center space-x-4">
@@ -431,7 +496,7 @@ function AppContent() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Dashboard tasks={tasks} courses={courses} />} />
           <Route path="/features" element={<Features />} />
           <Route 
             path="/features/manage-academic-tasks" 
@@ -499,7 +564,7 @@ function AppContent() {
               />
             } 
           />
-          <Route path="/features/manage-user-experience" element={<UserProfile />} />
+          <Route path="/features/manage-user-experience" element={<UserProfile tasks={tasks} courses={courses} studySessions={studySessions} />} />
         </Routes>
       </main>
     </div>
@@ -514,80 +579,211 @@ function App() {
   )
 }
 
-function Dashboard() {
+interface DashboardProps {
+  tasks?: Task[]
+  courses?: Course[]
+}
+
+function Dashboard({ tasks = [], courses = [] }: DashboardProps) {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const overdueTasks = tasks.filter(t =>
+    t.status !== 'completed' &&
+    t.dueDate &&
+    new Date(t.dueDate) < new Date()
+  ).sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime())
+
+  const quickActions = [
+    { label: 'Manage Tasks',      desc: 'Organize assignments & priorities',  path: '/features/manage-academic-tasks',       icon: BookOpen,      color: 'text-primary-600', bg: 'bg-primary-100',  hover: 'hover:bg-primary-50 hover:border-primary-300' },
+    { label: 'Track GPA',         desc: 'Monitor academic performance',        path: '/features/track-academic-performance',  icon: TrendingUp,    color: 'text-green-600',   bg: 'bg-green-100',    hover: 'hover:bg-green-50 hover:border-green-300' },
+    { label: 'Study Schedule',    desc: 'Plan & log study time',              path: '/features/plan-study-time',             icon: Clock,         color: 'text-purple-600',  bg: 'bg-purple-100',   hover: 'hover:bg-purple-50 hover:border-purple-300' },
+    { label: 'Analyze Workload',  desc: 'Visualize intensity spikes',         path: '/features/analyze-workload',            icon: BarChart3,     color: 'text-blue-600',    bg: 'bg-blue-100',     hover: 'hover:bg-blue-50 hover:border-blue-300' },
+    { label: 'Burnout Monitor',   desc: 'Prevent academic burnout',           path: '/features/monitor-burnout',             icon: AlertTriangle, color: 'text-orange-600',  bg: 'bg-orange-100',   hover: 'hover:bg-orange-50 hover:border-orange-300' },
+    { label: 'User Profile',      desc: 'Customize settings & goals',        path: '/features/manage-user-experience',      icon: User,          color: 'text-indigo-600',  bg: 'bg-indigo-100',   hover: 'hover:bg-indigo-50 hover:border-indigo-300' },
+  ]
+
   return (
-    <div>
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900">Welcome to StudySphere</h2>
-        <p className="mt-2 text-gray-600">Your comprehensive academic planning system</p>
+    <div className="space-y-6">
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white">
+        <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.username || 'Student'}!</h1>
+        <p className="text-primary-100 text-lg">Ready to boost your academic performance today?</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="card">
-          <div className="flex items-center mb-4">
-            <BookOpen className="h-8 w-8 text-primary-600 mr-3" />
-            <h3 className="text-lg font-semibold">Manage Academic Tasks</h3>
+      {/* Statistics Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <BookOpen className="h-6 w-6 text-blue-600" />
+            </div>
+            <span className="text-sm text-gray-500">Active Tasks</span>
           </div>
-          <p className="text-gray-600 mb-4">Organize assignments, set priorities, and track completion</p>
-          <Link to="/features/manage-academic-tasks" className="btn btn-primary">
-            Get Started
-          </Link>
+          <div className="text-2xl font-bold text-gray-900">12</div>
+          <div className="text-sm text-green-600 mt-1">+3 this week</div>
         </div>
 
-        <div className="card">
-          <div className="flex items-center mb-4">
-            <TrendingUp className="h-8 w-8 text-success-600 mr-3" />
-            <h3 className="text-lg font-semibold">Track Academic Performance</h3>
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <TrendingUp className="h-6 w-6 text-green-600" />
+            </div>
+            <span className="text-sm text-gray-500">Current GPA</span>
           </div>
-          <p className="text-gray-600 mb-4">Monitor GPA, calculate grades, and set academic goals</p>
-          <Link to="/features/track-academic-performance" className="btn btn-primary">
-            Get Started
-          </Link>
+          <div className="text-2xl font-bold text-gray-900">3.7</div>
+          <div className="text-sm text-green-600 mt-1">On track</div>
         </div>
 
-        <div className="card">
-          <div className="flex items-center mb-4">
-            <Clock className="h-8 w-8 text-warning-600 mr-3" />
-            <h3 className="text-lg font-semibold">Plan and Log Study Time</h3>
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Clock className="h-6 w-6 text-purple-600" />
+            </div>
+            <span className="text-sm text-gray-500">Study Hours</span>
           </div>
-          <p className="text-gray-600 mb-4">Schedule sessions and analyze study patterns</p>
-          <Link to="/features/plan-study-time" className="btn btn-primary">
-            Get Started
-          </Link>
+          <div className="text-2xl font-bold text-gray-900">24.5</div>
+          <div className="text-sm text-gray-600 mt-1">This week</div>
         </div>
 
-        <div className="card">
-          <div className="flex items-center mb-4">
-            <BarChart3 className="h-8 w-8 text-secondary-600 mr-3" />
-            <h3 className="text-lg font-semibold">Analyze Workload</h3>
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <AlertTriangle className="h-6 w-6 text-orange-600" />
+            </div>
+            <span className="text-sm text-gray-500">Workload</span>
           </div>
-          <p className="text-gray-600 mb-4">Visualize workload and detect intensity spikes</p>
-          <Link to="/features/analyze-workload" className="btn btn-primary">
-            Get Started
-          </Link>
+          <div className="text-2xl font-bold text-gray-900">Medium</div>
+          <div className="text-sm text-orange-600 mt-1">Manageable</div>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Tasks</h2>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <div>
+                  <p className="font-medium text-gray-900">Math Assignment</p>
+                  <p className="text-sm text-gray-600">Due in 2 days</p>
+                </div>
+              </div>
+              <span className="text-sm text-green-600 font-medium">High</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <div>
+                  <p className="font-medium text-gray-900">Physics Lab Report</p>
+                  <p className="text-sm text-gray-600">Due in 5 days</p>
+                </div>
+              </div>
+              <span className="text-sm text-yellow-600 font-medium">Medium</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div>
+                  <p className="font-medium text-gray-900">Essay Draft</p>
+                  <p className="text-sm text-gray-600">Due in 1 week</p>
+                </div>
+              </div>
+              <span className="text-sm text-blue-600 font-medium">Low</span>
+            </div>
+          </div>
         </div>
 
-        <div className="card">
-          <div className="flex items-center mb-4">
-            <AlertTriangle className="h-8 w-8 text-error-600 mr-3" />
-            <h3 className="text-lg font-semibold">Monitor Burnout</h3>
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Study Sessions</h2>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Clock className="h-4 w-4 text-purple-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Calculus Study</p>
+                  <p className="text-sm text-gray-600">2.5 hours • Today</p>
+                </div>
+              </div>
+              <span className="text-sm text-purple-600 font-medium">Completed</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Physics Review</p>
+                  <p className="text-sm text-gray-600">1.5 hours • Yesterday</p>
+                </div>
+              </div>
+              <span className="text-sm text-blue-600 font-medium">Completed</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Clock className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">English Essay</p>
+                  <p className="text-sm text-gray-600">3 hours • 2 days ago</p>
+                </div>
+              </div>
+              <span className="text-sm text-green-600 font-medium">Completed</span>
+            </div>
           </div>
-          <p className="text-gray-600 mb-4">Prevent burnout with alerts and recommendations</p>
-          <Link to="/features/monitor-burnout" className="btn btn-primary">
-            Get Started
-          </Link>
         </div>
+      </div>
 
-        <div className="card">
-          <div className="flex items-center mb-4">
-            <User className="h-8 w-8 text-primary-600 mr-3" />
-            <h3 className="text-lg font-semibold">Manage User Experience</h3>
-          </div>
-          <p className="text-gray-600 mb-4">Customize profile, set goals, and track progress</p>
-          <Link to="/features/manage-user-experience" className="btn btn-primary">
-            Get Started
-          </Link>
+      {/* Overdue Assignments */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-red-100">
+        <div className="flex items-center gap-2 mb-4">
+          <AlertTriangle className="h-5 w-5 text-red-500" />
+          <h2 className="text-xl font-semibold text-gray-900">Overdue Assignments</h2>
+          {overdueTasks.length > 0 && (
+            <span className="ml-auto bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">
+              {overdueTasks.length}
+            </span>
+          )}
         </div>
+        {overdueTasks.length === 0 ? (
+          <div className="text-center py-6 text-gray-500">
+            <div className="text-2xl mb-1">✅</div>
+            <p className="text-sm">No overdue assignments — great work!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {overdueTasks.map(task => {
+              const course = courses.find(c => c.id === task.courseId)
+              const daysOverdue = Math.floor((new Date().getTime() - new Date(task.dueDate!).getTime()) / (1000 * 60 * 60 * 24))
+              return (
+                <div key={task.id} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{task.title}</p>
+                      <p className="text-xs text-gray-500">
+                        {course?.name ?? 'No course'} · Due {new Date(task.dueDate!).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 ml-4">
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                      daysOverdue >= 7 ? 'bg-red-200 text-red-800' : 'bg-orange-100 text-orange-700'
+                    }`}>
+                      {daysOverdue === 0 ? 'Due today' : `${daysOverdue}d overdue`}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

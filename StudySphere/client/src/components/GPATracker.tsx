@@ -232,30 +232,100 @@ export default function GPATracker({
           >
             Course Grades
           </button>
-          <button
-            onClick={() => setActiveTab('calculator')}
-            className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'calculator' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-          >
-            Grade Calculator
-          </button>
         </div>
       </div>
 
-      {/* GPA Progress Tab */}
+      {/* GPA Progress Tab — chart + calculator side by side */}
       {activeTab === 'overview' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold mb-4">GPA Progress Chart</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={gpaProgressData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="semester" />
-              <YAxis domain={[0, 4]} />
-              <Tooltip />
-              <Legend />
-              <Area type="monotone" dataKey="cumulative" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} name="Cumulative GPA" />
-              <Area type="monotone" dataKey="goal" stroke="#10b981" fill="#10b981" fillOpacity={0.2} name="GPA Goal" />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Chart */}
+          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold mb-4">GPA Progress Chart</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={gpaProgressData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="semester" />
+                <YAxis domain={[0, 4]} />
+                <Tooltip />
+                <Legend />
+                <Area type="monotone" dataKey="cumulative" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} name="Cumulative GPA" />
+                <Area type="monotone" dataKey="goal" stroke="#10b981" fill="#10b981" fillOpacity={0.2} name="GPA Goal" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Grade Calculator */}
+          <div className="lg:col-span-1 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-primary-600" />
+              Grade Calculator
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <label className="label">Course</label>
+                <select
+                  value={calculatorTarget.courseId}
+                  onChange={(e) => setCalculatorTarget({ ...calculatorTarget, courseId: e.target.value })}
+                  className="input"
+                >
+                  <option value="">Select a course</option>
+                  {courses.map(course => (
+                    <option key={course.id} value={course.id}>{course.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Target Grade (%)</label>
+                <input
+                  type="number"
+                  step="0.1" min="0" max="100"
+                  value={calculatorTarget.targetGrade}
+                  onChange={(e) => setCalculatorTarget({ ...calculatorTarget, targetGrade: e.target.value })}
+                  className="input"
+                  placeholder="e.g., 85"
+                />
+              </div>
+              <div>
+                <label className="label">Current Grade (%)</label>
+                <input
+                  type="number"
+                  step="0.1" min="0" max="100"
+                  value={calculatorTarget.currentGrade}
+                  onChange={(e) => setCalculatorTarget({ ...calculatorTarget, currentGrade: e.target.value })}
+                  className="input"
+                  placeholder="e.g., 78"
+                />
+              </div>
+              <div>
+                <label className="label">Remaining Weight (%)</label>
+                <input
+                  type="number"
+                  step="1" min="0" max="100"
+                  value={calculatorTarget.remainingWeight}
+                  onChange={(e) => setCalculatorTarget({ ...calculatorTarget, remainingWeight: parseInt(e.target.value) })}
+                  className="input"
+                />
+              </div>
+
+              {calculateRequiredGrade() && (
+                <div className={`p-3 rounded-lg border ${
+                  calculateRequiredGrade()!.isPossible ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Calculator className="h-4 w-4" />
+                    <span className="font-medium text-sm">
+                      Required: {calculateRequiredGrade()!.requiredGrade.toFixed(1)}%
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {calculateRequiredGrade()!.isPossible
+                      ? 'Achievable with remaining coursework.'
+                      : 'May not be achievable. Adjust your goals.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -304,90 +374,6 @@ export default function GPATracker({
         </div>
       )}
 
-      {/* Grade Calculator Tab */}
-      {activeTab === 'calculator' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold mb-4">Grade Requirement Calculator</h3>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="label">Course</label>
-                <select
-                  value={calculatorTarget.courseId}
-                  onChange={(e) => setCalculatorTarget({ ...calculatorTarget, courseId: e.target.value })}
-                  className="input"
-                >
-                  <option value="">Select a course</option>
-                  {courses.map(course => (
-                    <option key={course.id} value={course.id}>{course.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="label">Target Grade</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="100"
-                  value={calculatorTarget.targetGrade}
-                  onChange={(e) => setCalculatorTarget({ ...calculatorTarget, targetGrade: e.target.value })}
-                  className="input"
-                  placeholder="e.g., 85"
-                />
-              </div>
-
-              <div>
-                <label className="label">Current Grade</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="100"
-                  value={calculatorTarget.currentGrade}
-                  onChange={(e) => setCalculatorTarget({ ...calculatorTarget, currentGrade: e.target.value })}
-                  className="input"
-                  placeholder="e.g., 78"
-                />
-              </div>
-
-              <div>
-                <label className="label">Remaining Weight (%)</label>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  max="100"
-                  value={calculatorTarget.remainingWeight}
-                  onChange={(e) => setCalculatorTarget({ ...calculatorTarget, remainingWeight: parseInt(e.target.value) })}
-                  className="input"
-                />
-              </div>
-            </div>
-
-            {calculateRequiredGrade() && (
-              <div className={`p-4 rounded-lg ${
-                calculateRequiredGrade()!.isPossible ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-              } border`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <Calculator className="h-5 w-5" />
-                  <span className="font-medium">
-                    Required Grade: {calculateRequiredGrade()!.requiredGrade.toFixed(1)}
-                  </span>
-                </div>
-                <p className="text-sm">
-                  {calculateRequiredGrade()!.isPossible 
-                    ? 'This grade is achievable with remaining coursework.'
-                    : 'This grade may not be achievable. Consider adjusting your goals.'
-                  }
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Add Grade Modal */}
       {showAddGrade && (

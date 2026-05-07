@@ -22,11 +22,7 @@ export default function BurnoutMonitor({
   onAlertUpdate, 
   onAlertDelete 
 }: BurnoutMonitorProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'alerts' | 'recommendations'>('overview')
-  const [spikeAlertsEnabled, setSpikeAlertsEnabled] = useState(true)
-  const [burnoutAlertsEnabled, setBurnoutAlertsEnabled] = useState(true)
-  const [breakReminderEnabled, setBreakReminderEnabled] = useState(true)
-
+  const [activeTab, setActiveTab] = useState<'overview' | 'alerts'>('overview')
   const calculateWorkloadIntensity = () => {
     const today = new Date()
     const weekStart = new Date(today)
@@ -199,98 +195,9 @@ export default function BurnoutMonitor({
             >
               Alerts
             </button>
-            <button
-              onClick={() => setActiveTab('recommendations')}
-              className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'recommendations' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-            >
-              Recommendations
-            </button>
           </div>
         </div>
 
-        {/* Risk Score Display */}
-        <div className="text-center mb-6">
-          <div className={`text-4xl font-bold ${
-            burnoutRisk.level === 'critical' ? 'text-red-600' :
-            burnoutRisk.level === 'high' ? 'text-orange-600' :
-            burnoutRisk.level === 'moderate' ? 'text-yellow-600' :
-            'text-green-600'
-          }`}>
-            {burnoutRisk.score}/100
-          </div>
-          <div className="text-lg text-gray-600">Burnout Risk Score</div>
-          <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-            burnoutRisk.level === 'critical' ? 'bg-red-100 text-red-800' :
-            burnoutRisk.level === 'high' ? 'bg-orange-100 text-orange-800' :
-            burnoutRisk.level === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
-            'bg-green-100 text-green-800'
-          }`}>
-            {burnoutRisk.level.charAt(0).toUpperCase() + burnoutRisk.level.slice(1)} Risk
-          </div>
-        </div>
-
-        {/* Notification Settings */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-              <div>
-                <div className="font-medium text-gray-900">Workload Spike Alerts</div>
-                <div className="text-sm text-gray-600">Get notified about heavy weeks</div>
-              </div>
-            </div>
-            <button
-              onClick={() => setSpikeAlertsEnabled(!spikeAlertsEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                spikeAlertsEnabled ? 'bg-primary-600' : 'bg-gray-200'
-              }`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                spikeAlertsEnabled ? 'translate-x-6' : 'translate-x-1'
-              }`} />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center gap-3">
-              <Brain className="h-5 w-5 text-red-500" />
-              <div>
-                <div className="font-medium text-gray-900">Burnout Alerts</div>
-                <div className="text-sm text-gray-600">Alert for overworking patterns</div>
-              </div>
-            </div>
-            <button
-              onClick={() => setBurnoutAlertsEnabled(!burnoutAlertsEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                burnoutAlertsEnabled ? 'bg-primary-600' : 'bg-gray-200'
-              }`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                burnoutAlertsEnabled ? 'translate-x-6' : 'translate-x-1'
-              }`} />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center gap-3">
-              <Coffee className="h-5 w-5 text-blue-500" />
-              <div>
-                <div className="font-medium text-gray-900">Break Reminders</div>
-                <div className="text-sm text-gray-600">Take regular study breaks</div>
-              </div>
-            </div>
-            <button
-              onClick={() => setBreakReminderEnabled(!breakReminderEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                breakReminderEnabled ? 'bg-primary-600' : 'bg-gray-200'
-              }`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                breakReminderEnabled ? 'translate-x-6' : 'translate-x-1'
-              }`} />
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Overview Tab */}
@@ -463,7 +370,7 @@ export default function BurnoutMonitor({
           </div>
 
           {/* Spike Detection Alerts */}
-          {spikeAlertsEnabled && workloadSpikes.length > 0 && (
+          {workloadSpikes.length > 0 && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold mb-4">Workload Spike Detection</h3>
               <div className="space-y-3">
@@ -485,89 +392,85 @@ export default function BurnoutMonitor({
               </div>
             </div>
           )}
-        </div>
-      )}
 
-      {/* Recommendations Tab */}
-      {activeTab === 'recommendations' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Task Focus Recommendations */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold mb-4">Task Focus Recommendations</h3>
-            <div className="space-y-3">
-              {taskRecommendations.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">
-                  No pending tasks. Great job staying on top of your work!
-                </div>
-              ) : (
-                taskRecommendations.map(task => (
-                  <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-gray-900">{task.title}</h4>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            task.urgency === 'critical' ? 'bg-red-100 text-red-700' :
-                            task.urgency === 'high' ? 'bg-orange-100 text-orange-700' :
-                            'bg-blue-100 text-blue-700'
-                          }`}>
-                            {task.urgency}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-600 mb-1">
-                          {task.courseName} · {task.estimatedTime}min
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {task.reason} · {task.daysUntilDue} days left
-                        </div>
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-gray-400 mt-1" />
-                    </div>
+          {/* Recommendations (merged) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Task Focus Recommendations */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold mb-4">Task Focus Recommendations</h3>
+              <div className="space-y-3">
+                {taskRecommendations.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500">
+                    No pending tasks. Great job staying on top of your work!
                   </div>
-                ))
-              )}
+                ) : (
+                  taskRecommendations.map(task => (
+                    <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-medium text-gray-900">{task.title}</h4>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              task.urgency === 'critical' ? 'bg-red-100 text-red-700' :
+                              task.urgency === 'high' ? 'bg-orange-100 text-orange-700' :
+                              'bg-blue-100 text-blue-700'
+                            }`}>
+                              {task.urgency}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-600 mb-1">
+                            {task.courseName} · {task.estimatedTime}min
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {task.reason} · {task.daysUntilDue} days left
+                          </div>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-gray-400 mt-1" />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Burnout Prevention Tips */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold mb-4">Burnout Prevention Tips</h3>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Clock className="h-5 w-5 text-blue-500 mt-1" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Time Management</h4>
-                  <p className="text-sm text-gray-600">Use the Pomodoro Technique: 25 minutes of focused study followed by a 5-minute break.</p>
+            {/* Burnout Prevention Tips */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold mb-4">Burnout Prevention Tips</h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Clock className="h-5 w-5 text-blue-500 mt-1" />
+                  <div>
+                    <h4 className="font-medium text-gray-900">Time Management</h4>
+                    <p className="text-sm text-gray-600">Use the Pomodoro Technique: 25 minutes of focused study followed by a 5-minute break.</p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <Coffee className="h-5 w-5 text-green-500 mt-1" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Regular Breaks</h4>
-                  <p className="text-sm text-gray-600">Take a 15-30 minute break every 2-3 hours of studying to maintain focus and energy.</p>
+                <div className="flex items-start gap-3">
+                  <Coffee className="h-5 w-5 text-green-500 mt-1" />
+                  <div>
+                    <h4 className="font-medium text-gray-900">Regular Breaks</h4>
+                    <p className="text-sm text-gray-600">Take a 15-30 minute break every 2-3 hours of studying to maintain focus and energy.</p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <Heart className="h-5 w-5 text-red-500 mt-1" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Self-Care</h4>
-                  <p className="text-sm text-gray-600">Prioritize sleep, nutrition, and physical activity to maintain mental clarity.</p>
+                <div className="flex items-start gap-3">
+                  <Heart className="h-5 w-5 text-red-500 mt-1" />
+                  <div>
+                    <h4 className="font-medium text-gray-900">Self-Care</h4>
+                    <p className="text-sm text-gray-600">Prioritize sleep, nutrition, and physical activity to maintain mental clarity.</p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <Target className="h-5 w-5 text-purple-500 mt-1" />
-                <div>
-                  <h4 className="font-medium text-gray-900">Set Realistic Goals</h4>
-                  <p className="text-sm text-gray-600">Break large tasks into smaller, manageable chunks to avoid feeling overwhelmed.</p>
+                <div className="flex items-start gap-3">
+                  <Target className="h-5 w-5 text-purple-500 mt-1" />
+                  <div>
+                    <h4 className="font-medium text-gray-900">Set Realistic Goals</h4>
+                    <p className="text-sm text-gray-600">Break large tasks into smaller, manageable chunks to avoid feeling overwhelmed.</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
+
     </div>
   )
 }
