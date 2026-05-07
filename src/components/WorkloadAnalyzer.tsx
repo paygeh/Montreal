@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Calendar, TrendingUp, AlertTriangle, Clock, BarChart3, Plus, Filter, ChevronRight, Project, Target } from 'lucide-react'
+import { Calendar, TrendingUp, AlertTriangle, Clock, Plus, Target } from 'lucide-react'
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart as RechartsBarChart, Bar, PieChart, Pie, Cell } from 'recharts'
 import { Task, Course, WorkloadRecord, OngoingProject } from '../types'
 
@@ -25,7 +25,7 @@ export default function WorkloadAnalyzer({
   onProjectDelete 
 }: WorkloadAnalyzerProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'calendar' | 'projects'>('overview')
-  const [selectedWeek, setSelectedWeek] = useState<string>(new Date().toISOString().split('T')[0])
+  const [calendarMonth, setCalendarMonth] = useState(new Date())
   const [showAddProject, setShowAddProject] = useState(false)
 
   const getWeekStartDate = (date: Date) => {
@@ -133,33 +133,42 @@ export default function WorkloadAnalyzer({
     }).filter(course => course.hours > 0)
   }
 
-  const getCalendarData = () => {
-    const data = []
-    const today = new Date()
-    
-    for (let i = 0; i < 35; i++) {
-      const date = new Date(today)
-      date.setDate(date.getDate() - (today.getDay() - 1) + i)
-      
+  const getCalendarData = (month: Date) => {
+    const year = month.getFullYear()
+    const mon  = month.getMonth()
+    const firstDay = new Date(year, mon, 1)
+    const lastDay  = new Date(year, mon + 1, 0)
+
+    // Monday-based offset (Mon=0 … Sun=6)
+    const startOffset = (firstDay.getDay() + 6) % 7
+    // Pad to complete the last row
+    const totalCells = Math.ceil((startOffset + lastDay.getDate()) / 7) * 7
+
+    const data: ({
+      date: number; fullDate: string; hours: number; taskCount: number; intensity: string; taskList: Task[]
+    } | null)[] = []
+
+    for (let i = 0; i < totalCells; i++) {
+      const dayIndex = i - startOffset + 1
+      if (dayIndex < 1 || dayIndex > lastDay.getDate()) {
+        data.push(null)
+        continue
+      }
+      const date = new Date(year, mon, dayIndex)
       const dayTasks = tasks.filter(task => {
         if (!task.dueDate) return false
-        const dueDate = new Date(task.dueDate)
-        return dueDate.toDateString() === date.toDateString()
+        return new Date(task.dueDate).toDateString() === date.toDateString()
       })
-      
-      const totalMinutes = dayTasks.reduce((sum, task) => sum + (task.estimatedTime || 0), 0)
-      const totalHours = totalMinutes / 60
-      
+      const totalHours = dayTasks.reduce((sum, task) => sum + (task.estimatedTime || 0), 0) / 60
       data.push({
-        date: date.getDate(),
+        date: dayIndex,
         fullDate: date.toISOString().split('T')[0],
-        dayName: date.toLocaleDateString('en', { weekday: 'short' }),
         hours: totalHours,
-        tasks: dayTasks.length,
-        intensity: totalHours > 4 ? 'high' : totalHours > 2 ? 'medium' : 'light'
+        taskCount: dayTasks.length,
+        taskList: dayTasks,
+        intensity: totalHours > 6 ? 'extreme' : totalHours > 4 ? 'high' : totalHours > 2 ? 'medium' : totalHours > 0 ? 'light' : 'none'
       })
     }
-    
     return data
   }
 
@@ -167,7 +176,7 @@ export default function WorkloadAnalyzer({
   const workloadSpikes = detectWorkloadSpikes()
   const weeklyComparison = getWeeklyComparisonData()
   const courseWorkload = getCourseWorkload()
-  const calendarData = getCalendarData()
+  const calendarData = getCalendarData(calendarMonth)
 
   return (
     <div className="space-y-6">
@@ -181,12 +190,6 @@ export default function WorkloadAnalyzer({
               className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'overview' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700'}`}
             >
               Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('calendar')}
-              className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'calendar' ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-            >
-              Calendar
             </button>
             <button
               onClick={() => setActiveTab('projects')}
@@ -228,9 +231,9 @@ export default function WorkloadAnalyzer({
 
       {/* Overview Tab */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-6">
           {/* Current Week Homework */}
-          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">This Week's Homework</h3>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getIntensityColor(getWorkloadIntensity(currentWeekTasks))}`}>
@@ -285,149 +288,6 @@ export default function WorkloadAnalyzer({
             </div>
           </div>
 
-          {/* Ongoing Projects Sidebar */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Ongoing Projects</h3>
-              <button
-                onClick={() => setShowAddProject(true)}
-                className="btn btn-primary text-sm"
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Add
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {ongoingProjects.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">
-                  No ongoing projects.
-                </div>
-              ) : (
-                ongoingProjects.map(project => {
-                  const progress = project.progressPercentage || 0
-                  const daysUntilDue = project.endDate ? Math.ceil((new Date(project.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0
-                  
-                  return (
-                    <div key={project.id} className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-gray-900 text-sm">{project.title}</h4>
-                        <button
-                          onClick={() => onProjectDelete(project.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          ×
-                        </button>
-                      </div>
-                      <div className="text-xs text-gray-600 mb-2">
-                        {project.courseId ? courses.find(c => c.id === project.courseId)?.name : 'No course'}
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs text-gray-600">
-                          <span>Progress: {progress}%</span>
-                          <span>{daysUntilDue > 0 ? `${daysUntilDue} days left` : 'Overdue'}</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-primary-600 h-2 rounded-full"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Calendar Tab */}
-      {activeTab === 'calendar' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Calendar View */}
-          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold mb-4">Workload Calendar</h3>
-            
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                <div key={day} className="text-center text-sm font-medium text-gray-600 py-2">
-                  {day}
-                </div>
-              ))}
-            </div>
-            
-            <div className="grid grid-cols-7 gap-1">
-              {calendarData.map((day, index) => (
-                <div
-                  key={index}
-                  className={`border rounded-lg p-2 min-h-[80px] cursor-pointer hover:shadow-md transition-shadow ${
-                    day.intensity === 'extreme' ? 'border-red-300 bg-red-50' :
-                    day.intensity === 'high' ? 'border-orange-300 bg-orange-50' :
-                    day.intensity === 'medium' ? 'border-yellow-300 bg-yellow-50' :
-                    'border-gray-200 bg-white'
-                  }`}
-                >
-                  <div className="text-sm font-medium mb-1">{day.date}</div>
-                  {day.tasks > 0 && (
-                    <div className="space-y-1">
-                      <div className="text-xs text-gray-600">{day.tasks} tasks</div>
-                      <div className="text-xs font-medium">{day.hours.toFixed(1)}h</div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-green-50 border border-green-200 rounded"></div>
-                <span>Light (&lt;2h)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-yellow-50 border border-yellow-200 rounded"></div>
-                <span>Medium (2-4h)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-orange-50 border border-orange-200 rounded"></div>
-                <span>High (4-6h)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-50 border border-red-200 rounded"></div>
-                <span>Extreme (&gt;6h)</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Workload Spike Detection */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold mb-4">Workload Spike Detection</h3>
-            
-            <div className="space-y-3">
-              {workloadSpikes.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">
-                  No workload spikes detected.
-                </div>
-              ) : (
-                workloadSpikes.map((spike, index) => (
-                  <div key={index} className="border border-red-200 rounded-lg p-3 bg-red-50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertTriangle className="h-4 w-4 text-red-600" />
-                      <span className="font-medium text-red-900">Heavy Week Detected</span>
-                    </div>
-                    <div className="text-sm text-gray-700">
-                      <div>Week of {new Date(spike.weekStart).toLocaleDateString()}</div>
-                      <div>{spike.tasks} tasks, {spike.totalHours.toFixed(1)} hours</div>
-                      <div className="mt-2 text-xs text-red-600">
-                        Consider redistributing work or starting earlier
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
         </div>
       )}
 
@@ -445,6 +305,27 @@ export default function WorkloadAnalyzer({
             </button>
           </div>
 
+          {/* Stale project reminder banner */}
+          {(() => {
+            const stale = ongoingProjects.filter(p =>
+              p.status !== 'completed' && p.status !== 'cancelled' &&
+              (new Date().getTime() - new Date(p.updatedAt).getTime()) > 7 * 24 * 60 * 60 * 1000
+            )
+            return stale.length > 0 ? (
+              <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-lg p-4 mb-6">
+                <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-semibold text-amber-800 text-sm">
+                    {stale.length} project{stale.length !== 1 ? 's haven\'t' : ' hasn\'t'} been updated in over a week
+                  </p>
+                  <p className="text-amber-700 text-xs mt-0.5">
+                    {stale.map(p => p.title).join(', ')} — consider logging new progress.
+                  </p>
+                </div>
+              </div>
+            ) : null
+          })()}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {ongoingProjects.length === 0 ? (
               <div className="col-span-full text-center py-8 text-gray-500">
@@ -455,13 +336,26 @@ export default function WorkloadAnalyzer({
                 const progress = project.progressPercentage || 0
                 const daysUntilDue = project.endDate ? Math.ceil((new Date(project.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0
                 
+                const daysSinceUpdate = Math.floor((new Date().getTime() - new Date(project.updatedAt).getTime()) / (1000 * 60 * 60 * 24))
+                const isStale = project.status !== 'completed' && project.status !== 'cancelled' && daysSinceUpdate >= 7
+
                 return (
-                  <div key={project.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div key={project.id} className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
+                    isStale ? 'border-amber-300 bg-amber-50' : 'border-gray-200'
+                  }`}>
                     <div className="flex items-start justify-between mb-3">
-                      <h4 className="font-semibold text-gray-900">{project.title}</h4>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">{project.title}</h4>
+                        {isStale && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <AlertTriangle className="h-3 w-3 text-amber-500" />
+                            <span className="text-xs text-amber-600 font-medium">No update for {daysSinceUpdate} days</span>
+                          </div>
+                        )}
+                      </div>
                       <button
                         onClick={() => onProjectDelete(project.id)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 ml-2"
                       >
                         ×
                       </button>
@@ -512,10 +406,9 @@ export default function WorkloadAnalyzer({
         </div>
       )}
 
-      {/* Weekly Comparison Chart */}
+      {/* Weekly Comparison + Calendar — inside overview */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Weekly Workload Comparison */}
+        <>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold mb-4">Weekly Workload Comparison</h3>
             <ResponsiveContainer width="100%" height={300}>
@@ -529,20 +422,129 @@ export default function WorkloadAnalyzer({
             </ResponsiveContainer>
           </div>
 
-          {/* Course Workload Distribution */}
+          {/* Calendar */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold mb-4">Course Workload Distribution</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <RechartsBarChart data={courseWorkload}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="hours" fill="#10b981" />
-              </RechartsBarChart>
-            </ResponsiveContainer>
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1))}
+                className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors"
+              >
+                ← Previous
+              </button>
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-gray-900">
+                  {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCalendarMonth(new Date())}
+                  className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium transition-colors"
+                >
+                  Today
+                </button>
+                <button
+                  onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1))}
+                  className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-2 mb-2">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                <div key={day} className="text-center text-xs font-bold text-gray-500 uppercase tracking-wider py-2">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-2">
+              {calendarData.map((day, index) => {
+                if (!day) return <div key={index} className="min-h-[90px]" />
+                const isToday = day.fullDate === new Date().toISOString().split('T')[0]
+                const cellStyle =
+                  day.intensity === 'extreme' ? 'bg-red-500 border-red-600 text-white shadow-md' :
+                  day.intensity === 'high'    ? 'bg-orange-400 border-orange-500 text-white shadow-md' :
+                  day.intensity === 'medium'  ? 'bg-yellow-300 border-yellow-400 text-yellow-900' :
+                  day.intensity === 'light'   ? 'bg-emerald-200 border-emerald-400 text-emerald-900' :
+                                               'bg-gray-50 border-gray-200 text-gray-500'
+                return (
+                  <div
+                    key={index}
+                    className={`relative group border-2 rounded-xl p-2 min-h-[90px] cursor-pointer transition-all hover:scale-105 hover:shadow-lg ${
+                      isToday ? 'ring-2 ring-blue-500 ring-offset-1' : ''
+                    } ${cellStyle}`}
+                  >
+                    <div className={`text-sm font-bold mb-1 ${
+                      isToday ? 'bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs' : ''
+                    }`}>
+                      {day.date}
+                    </div>
+                    {day.taskCount > 0 && (
+                      <div className="flex flex-wrap gap-0.5">
+                        {Array.from({ length: Math.min(day.taskCount, 5) }).map((_, i) => (
+                          <div key={i} className={`w-2 h-2 rounded-full ${
+                            day.intensity === 'extreme' ? 'bg-red-200' :
+                            day.intensity === 'high'    ? 'bg-orange-200' :
+                            day.intensity === 'medium'  ? 'bg-yellow-600' :
+                                                         'bg-emerald-600'
+                          }`} />
+                        ))}
+                        {day.taskCount > 5 && <span className="text-xs opacity-75">+{day.taskCount - 5}</span>}
+                      </div>
+                    )}
+                    {day.taskCount > 0 && (
+                      <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-56 pointer-events-none">
+                        <div className="bg-gray-900 text-white rounded-xl shadow-xl p-3 text-left">
+                          <div className="font-semibold text-sm mb-2 border-b border-gray-700 pb-1">
+                            {new Date(day.fullDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                          </div>
+                          <div className="text-xs text-gray-300 mb-2">
+                            {day.taskCount} task{day.taskCount !== 1 ? 's' : ''} · {day.hours.toFixed(1)}h total
+                          </div>
+                          <div className="space-y-2">
+                            {day.taskList.map(task => (
+                              <div key={task.id} className={`border-l-2 pl-2 ${
+                                task.priority === 'high'   ? 'border-red-400' :
+                                task.priority === 'medium' ? 'border-yellow-400' :
+                                                             'border-green-400'
+                              }`}>
+                                <div className="font-medium text-xs text-white truncate">{task.title}</div>
+                                <div className="text-xs text-gray-400 flex gap-2 mt-0.5">
+                                  <span className={`capitalize ${
+                                    task.priority === 'high'   ? 'text-red-400' :
+                                    task.priority === 'medium' ? 'text-yellow-400' :
+                                                                 'text-green-400'
+                                  }`}>{task.priority}</span>
+                                  {task.estimatedTime && <span>{task.estimatedTime}min</span>}
+                                  {task.courseId && <span>{courses.find(c => c.id === task.courseId)?.name}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex justify-center">
+                          <div className="w-3 h-3 bg-gray-900 rotate-45 -mt-1.5" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex items-center gap-2"><div className="w-5 h-5 bg-gray-50 border-2 border-gray-200 rounded-lg"></div><span className="text-gray-600">Free</span></div>
+              <div className="flex items-center gap-2"><div className="w-5 h-5 bg-emerald-200 border-2 border-emerald-400 rounded-lg"></div><span className="text-gray-600">Light (&lt;2h)</span></div>
+              <div className="flex items-center gap-2"><div className="w-5 h-5 bg-yellow-300 border-2 border-yellow-400 rounded-lg"></div><span className="text-gray-600">Medium (2–4h)</span></div>
+              <div className="flex items-center gap-2"><div className="w-5 h-5 bg-orange-400 border-2 border-orange-500 rounded-lg"></div><span className="text-gray-600">High (4–6h)</span></div>
+              <div className="flex items-center gap-2"><div className="w-5 h-5 bg-red-500 border-2 border-red-600 rounded-lg"></div><span className="text-gray-600">Extreme (&gt;6h)</span></div>
+              <div className="flex items-center gap-2"><div className="w-5 h-5 bg-white border-2 border-blue-500 rounded-lg ring-2 ring-blue-500 ring-offset-1"></div><span className="text-gray-600">Today</span></div>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Add Project Modal */}
