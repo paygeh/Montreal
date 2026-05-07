@@ -8,9 +8,10 @@ interface TaskListProps {
   onTaskUpdate: (task: Task) => void
   onTaskDelete: (taskId: string) => void
   onTaskCreate: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void
+  onCourseCreate?: (course: { name: string; instructor?: string; semester?: string }) => void
 }
 
-export default function TaskList({ tasks, courses, onTaskUpdate, onTaskDelete, onTaskCreate }: TaskListProps) {
+export default function TaskList({ tasks, courses, onTaskUpdate, onTaskDelete, onTaskCreate, onCourseCreate }: TaskListProps) {
   const [showNewTaskForm, setShowNewTaskForm] = useState(false)
   const [filter, setFilter] = useState<'all' | 'course' | 'priority' | 'dueDate'>('all')
   const [selectedCourse, setSelectedCourse] = useState<string>('')
@@ -19,6 +20,7 @@ export default function TaskList({ tasks, courses, onTaskUpdate, onTaskDelete, o
   const [sortBy, setSortBy] = useState<'priority' | 'dueDate' | 'title'>('priority')
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [showCourseForm, setShowCourseForm] = useState(false)
 
   const filteredTasks = tasks.filter(task => {
     if (filter === 'all') return true
@@ -235,6 +237,16 @@ export default function TaskList({ tasks, courses, onTaskUpdate, onTaskDelete, o
               </select>
             </div>
 
+            {/* Add Course Button */}
+            {onCourseCreate && (
+              <button
+                onClick={() => setShowCourseForm(true)}
+                className="btn btn-secondary flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Course
+              </button>
+            )}
             {/* Add Task Button */}
             <button
               onClick={() => setShowNewTaskForm(true)}
@@ -273,7 +285,29 @@ export default function TaskList({ tasks, courses, onTaskUpdate, onTaskDelete, o
         </div>
       </div>
 
-      {/* New Task Form */}
+      {/* Add Course Modal */}
+      {showCourseForm && onCourseCreate && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">Add Course</h3>
+              <button onClick={() => setShowCourseForm(false)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <NewCourseForm
+                onSubmit={(course) => {
+                  onCourseCreate(course)
+                  setShowCourseForm(false)
+                }}
+                onCancel={() => setShowCourseForm(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Edit Task Modal */}
       {editingTask && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -789,6 +823,66 @@ function NewTaskForm({ courses, onSubmit, onCancel }: NewTaskFormProps) {
         <button type="button" onClick={onCancel} className="btn btn-secondary">
           Cancel
         </button>
+      </div>
+    </form>
+  )
+}
+
+interface NewCourseFormProps {
+  onSubmit: (course: { name: string; instructor?: string; semester?: string }) => void
+  onCancel: () => void
+}
+
+function NewCourseForm({ onSubmit, onCancel }: NewCourseFormProps) {
+  const [formData, setFormData] = useState({ name: '', instructor: '', semester: '' })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formData.name.trim()) return
+    onSubmit({
+      name: formData.name.trim(),
+      instructor: formData.instructor.trim() || undefined,
+      semester: formData.semester.trim() || undefined,
+    })
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="label">Course Name *</label>
+        <input
+          type="text"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          className="input"
+          placeholder="e.g. Introduction to Psychology"
+          required
+          autoFocus
+        />
+      </div>
+      <div>
+        <label className="label">Professor <span className="text-gray-400 font-normal">(optional)</span></label>
+        <input
+          type="text"
+          value={formData.instructor}
+          onChange={(e) => setFormData({ ...formData, instructor: e.target.value })}
+          className="input"
+          placeholder="e.g. Dr. Smith"
+        />
+      </div>
+      <div>
+        <label className="label">Semester <span className="text-gray-400 font-normal">(optional)</span></label>
+        <input
+          type="text"
+          value={formData.semester}
+          onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+          className="input"
+          placeholder="e.g. Fall 2025"
+        />
+      </div>
+      <div className="flex gap-3 pt-2">
+        <button type="submit" className="btn btn-primary">Add Course</button>
+        <button type="button" onClick={onCancel} className="btn btn-secondary">Cancel</button>
       </div>
     </form>
   )

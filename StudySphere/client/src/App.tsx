@@ -78,14 +78,14 @@ function AppContent() {
     }
   }
 
-  const handleCourseAdd = (course: Omit<Course, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newCourse: Course = {
-      ...course,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+  const handleCourseAdd = async (course: { name: string; instructor?: string; semester?: string }) => {
+    try {
+      const saved = await createCourse(course)
+      setCourses(prev => [...prev, saved])
+    } catch {
+      const fallback: Course = { ...course, id: Date.now().toString(), taskCount: 0, completedTasks: 0 }
+      setCourses(prev => [...prev, fallback])
     }
-    // setCourses([...courses, newCourse])
   }
 
   const handleGradeAdd = (courseId: string, grade: { grade: string; weight: number; maxGrade: number }) => {
@@ -293,6 +293,7 @@ function AppContent() {
                 onTaskUpdate={handleTaskUpdate}
                 onTaskDelete={handleTaskDelete}
                 onTaskCreate={handleTaskCreate}
+                onCourseCreate={handleCourseAdd}
               />
             } 
           />

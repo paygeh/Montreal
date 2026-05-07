@@ -20,6 +20,7 @@ export interface Course {
   code?: string
   color?: string
   instructor?: string
+  semester?: string
   credits?: number
   maxGrade?: number
   currentGrade?: string

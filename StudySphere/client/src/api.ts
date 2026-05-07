@@ -91,10 +91,10 @@ export const fetchCourses = async (): Promise<Course[]> => {
   return (data ?? []).map(mapCourse)
 }
 
-export const createCourse = async (course: { name: string; instructor?: string; currentGrade?: number }): Promise<Course> => {
+export const createCourse = async (course: { name: string; instructor?: string; semester?: string; currentGrade?: number }): Promise<Course> => {
   const { data, error } = await supabase
     .from('courses')
-    .insert([{ course_name: course.name, professor_name: course.instructor, current_grade: course.currentGrade }])
+    .insert([{ course_name: course.name, professor_name: course.instructor, semester: course.semester, current_grade: course.currentGrade }])
     .select()
     .single()
   if (error) throw error
