@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { User, AuthState } from '../../types'
+import { supabase } from '../../lib/supabase'
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>
@@ -26,147 +27,99 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error: null
   })
 
-  useEffect(() => {
-    // Check for existing auth state in localStorage
-    const storedUser = localStorage.getItem('studysphere_user')
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser)
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null
-        })
-      } catch (error) {
-        localStorage.removeItem('studysphere_user')
-        setAuthState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null
-        })
-      }
-    } else {
-      setAuthState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null
-      })
+  const buildUser = (sbUser: any, profile: any): User => ({
+    id: sbUser.id,
+    email: sbUser.email ?? '',
+    username: profile?.username ?? sbUser.email?.split('@')[0] ?? 'User',
+    firstName: profile?.first_name ?? undefined,
+    lastName: profile?.last_name ?? undefined,
+    bio: profile?.bio ?? undefined,
+    preferences: {
+      notifications: {
+        assignmentDueSoon: true,
+        studySessionReminders: true,
+        weeklyProgressUpdates: true,
+        gpaUpdates: true,
+        workloadSpikes: true,
+        burnoutAlerts: true,
+        breakReminders: true,
+      },
+      theme: 'light',
+      timezone: 'UTC',
+      language: 'en',
+    },
+    weeklyGoals: [],
+    createdAt: sbUser.created_at ?? new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  })
+
+  const resolveSession = async (sbUser: any) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', sbUser.id)
+        .single()
+      return buildUser(sbUser, profile)
+    } catch {
+      return buildUser(sbUser, null)
     }
+  }
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const user = await resolveSession(session.user)
+        setAuthState({ user, isAuthenticated: true, isLoading: false, error: null })
+      } else {
+        setAuthState({ user: null, isAuthenticated: false, isLoading: false, error: null })
+      }
+    }).catch(() => {
+      setAuthState({ user: null, isAuthenticated: false, isLoading: false, error: null })
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const user = await resolveSession(session.user)
+        setAuthState({ user, isAuthenticated: true, isLoading: false, error: null })
+      } else {
+        setAuthState({ user: null, isAuthenticated: false, isLoading: false, error: null })
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const login = async (email: string, password: string) => {
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
-    
-    try {
-      // Simulate API call - in real app, this would be an actual API request
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Mock user data - in real app, this would come from the API
-      const mockUser: User = {
-        id: '1',
-        email: email.toLowerCase(),
-        username: email.split('@')[0],
-        preferences: {
-          notifications: {
-            assignmentDueSoon: true,
-            studySessionReminders: true,
-            weeklyProgressUpdates: true,
-            gpaUpdates: true,
-            workloadSpikes: true,
-            burnoutAlerts: true
-          },
-          theme: 'light',
-          timezone: 'UTC',
-          language: 'en'
-        },
-        weeklyGoals: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-      
-      localStorage.setItem('studysphere_user', JSON.stringify(mockUser))
-      
-      setAuthState({
-        user: mockUser,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null
-      })
-    } catch (error) {
-      setAuthState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: 'Login failed. Please check your credentials.'
-      })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      setAuthState(prev => ({ ...prev, isLoading: false, error: error.message }))
+    } else if (data.user) {
+      const user = await resolveSession(data.user)
+      setAuthState({ user, isAuthenticated: true, isLoading: false, error: null })
     }
   }
 
   const signup = async (email: string, username: string, password: string) => {
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Mock user creation
-      const newUser: User = {
-        id: Date.now().toString(),
-        email: email.toLowerCase(),
-        username: username,
-        preferences: {
-          notifications: {
-            assignmentDueSoon: true,
-            studySessionReminders: true,
-            weeklyProgressUpdates: true,
-            gpaUpdates: true,
-            workloadSpikes: true,
-            burnoutAlerts: true
-          },
-          theme: 'light',
-          timezone: 'UTC',
-          language: 'en'
-        },
-        weeklyGoals: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-      
-      localStorage.setItem('studysphere_user', JSON.stringify(newUser))
-      
-      setAuthState({
-        user: newUser,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null
-      })
-    } catch (error) {
-      setAuthState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: 'Signup failed. Please try again.'
-      })
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { username } }
+    })
+    if (error) {
+      setAuthState(prev => ({ ...prev, isLoading: false, error: error.message }))
     }
   }
 
-  const logout = () => {
-    localStorage.removeItem('studysphere_user')
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null
-    })
+  const logout = async () => {
+    await supabase.auth.signOut()
   }
 
   const updateUser = (userData: Partial<User>) => {
     if (authState.user) {
       const updatedUser = { ...authState.user, ...userData, updatedAt: new Date().toISOString() }
-      localStorage.setItem('studysphere_user', JSON.stringify(updatedUser))
       setAuthState(prev => ({ ...prev, user: updatedUser }))
     }
   }

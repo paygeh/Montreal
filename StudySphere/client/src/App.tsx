@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom'
 import { BookOpen, TrendingUp, Clock, BarChart3, AlertTriangle, User, LogOut, X, Zap } from 'lucide-react'
 import TaskList from './components/TaskList'
@@ -10,6 +10,13 @@ import UserProfile from './components/User/UserProfile'
 import AuthWrapper from './components/Auth/AuthWrapper'
 import { useAuth } from './components/Auth/AuthManager'
 import { Task, Course, GPARecord, StudySession, WorkloadRecord, OngoingProject, BurnoutAlert, CourseGrade } from './types'
+import {
+  fetchTasks, createTask, updateTask, deleteTask,
+  fetchCourses,
+  fetchStudySessions, createStudySession, updateStudySession, deleteStudySession,
+  fetchGPARecords,
+  fetchBurnoutAlerts, updateBurnoutAlertStatus,
+} from './api'
 
 function AppContent() {
   const { user, logout } = useAuth()
@@ -25,270 +32,50 @@ function AppContent() {
     { label: 'User Profile',      desc: 'Customize settings & goals',        path: '/features/manage-user-experience',      icon: User,          color: 'text-indigo-600',  bg: 'bg-indigo-100',   hover: 'hover:bg-indigo-50 hover:border-indigo-300' },
   ]
 
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: '1',
-      title: 'Complete Math Assignment',
-      description: 'Finish calculus homework chapter 3',
-      courseId: '1',
-      courseName: 'Calculus I',
-      priority: 'high',
-      status: 'completed',
-      dueDate: '2026-04-25T23:59:59Z',
-      estimatedTime: 120,
-      actualTime: 115,
-      createdAt: '2026-04-21T10:00:00Z',
-      updatedAt: '2026-04-21T10:00:00Z'
-    },
-    {
-      id: '2',
-      title: 'Study for Physics Quiz',
-      description: 'Review chapters 1-5 for upcoming quiz',
-      courseId: '2',
-      courseName: 'Physics II',
-      priority: 'medium',
-      status: 'completed',
-      dueDate: '2026-04-23T23:59:59Z',
-      estimatedTime: 90,
-      actualTime: 85,
-      createdAt: '2026-04-20T10:00:00Z',
-      updatedAt: '2026-04-21T10:00:00Z'
-    },
-    {
-      id: '3',
-      title: 'Write Essay Draft',
-      description: 'First draft of English literature essay',
-      courseId: '3',
-      courseName: 'English Literature',
-      priority: 'low',
-      status: 'completed',
-      dueDate: '2026-04-22T23:59:59Z',
-      estimatedTime: 180,
-      actualTime: 160,
-      createdAt: '2026-04-19T10:00:00Z',
-      updatedAt: '2026-04-21T10:00:00Z'
-    }
-  ])
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
+  const [gpaRecords, setGpaRecords] = useState<GPARecord[]>([])
+  const [studySessions, setStudySessions] = useState<StudySession[]>([])
 
-  const [courses] = useState<Course[]>([
-    { id: '1', name: 'Calculus I', code: 'MATH101', color: '#3b82f6', credits: 4, maxGrade: 100, currentGrade: '92', taskCount: 5, completedTasks: 2 },
-    { id: '2', name: 'Physics II', code: 'PHYS201', color: '#10b981', credits: 3, maxGrade: 100, currentGrade: '88', taskCount: 3, completedTasks: 1 },
-    { id: '3', name: 'English Literature', code: 'ENG201', color: '#8b5cf6', credits: 3, maxGrade: 100, currentGrade: '95', taskCount: 4, completedTasks: 2 }
-  ])
+  useEffect(() => {
+    fetchTasks().then(setTasks).catch(console.error)
+    fetchCourses().then(setCourses).catch(console.error)
+    fetchGPARecords().then(setGpaRecords).catch(console.error)
+    fetchStudySessions().then(setStudySessions).catch(console.error)
+    fetchBurnoutAlerts().then(setBurnoutAlerts).catch(console.error)
+  }, [])
 
-  const [gpaRecords] = useState<GPARecord[]>([
-    {
-      id: '1',
-      semester: 'Spring',
-      year: 2026,
-      semesterGPA: 3.7,
-      cumulativeGPA: 3.7,
-      goalGPA: 4.0,
-      credits: 10,
-      courses: [
-        { name: 'Calculus I', credits: 4, grade: '92' },
-        { name: 'Physics II', credits: 3, grade: '88' }
-      ],
-      createdAt: '2026-04-15T10:00:00Z',
-      updatedAt: '2026-04-15T10:00:00Z'
-    }
-  ])
+  const [workloadRecords] = useState<WorkloadRecord[]>([])
 
-  const [studySessions] = useState<StudySession[]>([
-    {
-      id: '1',
-      title: 'Calculus Chapter 5 Review',
-      courseId: '1',
-      startTime: '2026-04-21T14:00:00Z',
-      endTime: '2026-04-21T16:00:00Z',
-      location: 'Library Study Room A',
-      topic: 'Derivatives and Integrals',
-      notes: 'Reviewed chain rule and integration by parts',
-      duration: 120,
-      createdAt: '2026-04-21T10:00:00Z',
-      updatedAt: '2026-04-21T10:00:00Z'
-    },
-    {
-      id: '2',
-      title: 'Physics Lab Report Writing',
-      courseId: '2',
-      startTime: '2026-04-20T16:00:00Z',
-      endTime: '2026-04-20T18:30:00Z',
-      location: 'Science Building Lab 201',
-      topic: 'Thermodynamics Experiment',
-      notes: 'Completed data analysis and started writing conclusions',
-      duration: 150,
-      createdAt: '2026-04-20T10:00:00Z',
-      updatedAt: '2026-04-20T10:00:00Z'
-    },
-    {
-      id: '3',
-      title: 'English Essay Research',
-      courseId: '3',
-      startTime: '2026-04-19T10:00:00Z',
-      endTime: '2026-04-19T12:30:00Z',
-      location: 'Student Union',
-      topic: 'Shakespeare Analysis',
-      notes: 'Found 5 academic sources for the essay',
-      duration: 90,
-      createdAt: '2026-04-19T10:00:00Z',
-      updatedAt: '2026-04-19T10:00:00Z'
-    },
-    {
-      id: '4',
-      title: 'Calculus Problem Set',
-      courseId: '1',
-      startTime: '2026-04-18T19:00:00Z',
-      endTime: '2026-04-18T21:00:00Z',
-      location: 'Dorm Room',
-      topic: 'Optimization Problems',
-      notes: 'Completed 8 out of 10 problems',
-      duration: 120,
-      createdAt: '2026-04-18T10:00:00Z',
-      updatedAt: '2026-04-18T10:00:00Z'
-    }
-  ])
+  const [ongoingProjects] = useState<OngoingProject[]>([])
 
-  const [workloadRecords] = useState<WorkloadRecord[]>([
-    {
-      id: '1',
-      weekStartDate: '2026-04-20',
-      totalEstimatedTime: 480,
-      workloadIntensity: 'high',
-      createdAt: '2026-04-20T10:00:00Z',
-      updatedAt: '2026-04-20T10:00:00Z'
-    },
-    {
-      id: '2',
-      weekStartDate: '2026-04-13',
-      totalEstimatedTime: 720,
-      workloadIntensity: 'extreme',
-      createdAt: '2026-04-13T10:00:00Z',
-      updatedAt: '2026-04-13T10:00:00Z'
-    }
-  ])
+  const [burnoutAlerts, setBurnoutAlerts] = useState<BurnoutAlert[]>([])
 
-  const [ongoingProjects] = useState<OngoingProject[]>([
-    {
-      id: '1',
-      title: 'Research Paper on Climate Change',
-      courseId: '3',
-      startDate: '2026-04-01',
-      endDate: '2026-05-15',
-      progressPercentage: 65,
-      status: 'active',
-      createdAt: '2026-04-01T10:00:00Z',
-      updatedAt: '2026-04-21T10:00:00Z'
-    },
-    {
-      id: '2',
-      title: 'Physics Lab Final Project',
-      courseId: '2',
-      startDate: '2026-04-10',
-      endDate: '2026-05-10',
-      progressPercentage: 40,
-      status: 'active',
-      createdAt: '2026-04-10T10:00:00Z',
-      updatedAt: '2026-04-21T10:00:00Z'
-    },
-    {
-      id: '3',
-      title: 'Calculus Study Group Presentations',
-      courseId: '1',
-      startDate: '2026-04-15',
-      endDate: '2026-05-01',
-      progressPercentage: 85,
-      status: 'active',
-      createdAt: '2026-04-15T10:00:00Z',
-      updatedAt: '2026-04-21T10:00:00Z'
-    }
-  ])
+  const [courseGrades] = useState<CourseGrade[]>([])
 
-  const [burnoutAlerts] = useState<BurnoutAlert[]>([
-    {
-      id: '1',
-      alertType: 'warning',
-      title: 'High Study Intensity Detected',
-      message: 'You\'ve been studying for 8.5 hours today',
-      description: 'Extended study sessions may lead to burnout. Consider taking a break.',
-      triggerFactors: ['Study Duration', 'Session Count'],
-      recommendations: ['Take a 30-minute break', 'Hydrate and stretch', 'Review study schedule'],
-      status: 'active',
-      priority: 2,
-      createdAt: '2026-04-21T14:00:00Z',
-      updatedAt: '2026-04-21T14:00:00Z'
-    },
-    {
-      id: '2',
-      alertType: 'critical',
-      title: 'Workload Spike Alert',
-      message: 'Next week has 12 tasks due',
-      description: 'Heavy workload detected for the upcoming week. Plan accordingly.',
-      triggerFactors: ['Task Volume', 'Due Date Proximity'],
-      recommendations: ['Start assignments early', 'Prioritize high-value tasks', 'Consider deadline extensions'],
-      status: 'active',
-      priority: 1,
-      createdAt: '2026-04-21T10:00:00Z',
-      updatedAt: '2026-04-21T10:00:00Z'
-    }
-  ])
-
-  const [courseGrades] = useState<CourseGrade[]>([
-    {
-      id: '1',
-      courseId: '1',
-      courseName: 'Calculus I',
-      grade: '92.5',
-      letterGrade: 'A-',
-      credits: 4,
-      semester: 'Fall 2025',
-      gpaPoints: 3.7,
-      createdAt: '2025-12-15T10:00:00Z',
-      updatedAt: '2025-12-15T10:00:00Z'
-    },
-    {
-      id: '2',
-      courseId: '2',
-      courseName: 'Physics II',
-      grade: '88.0',
-      letterGrade: 'B+',
-      credits: 3,
-      semester: 'Fall 2025',
-      gpaPoints: 3.3,
-      createdAt: '2025-12-15T10:00:00Z',
-      updatedAt: '2025-12-15T10:00:00Z'
-    },
-    {
-      id: '3',
-      courseId: '3',
-      courseName: 'English Literature',
-      grade: '95.0',
-      letterGrade: 'A',
-      credits: 3,
-      semester: 'Fall 2025',
-      gpaPoints: 4.0,
-      createdAt: '2025-12-15T10:00:00Z',
-      updatedAt: '2025-12-15T10:00:00Z'
-    }
-  ])
-
-  const handleTaskUpdate = (updatedTask: Task) => {
-    setTasks(tasks.map(task => task.id === updatedTask.id ? updatedTask : task))
+  const handleTaskUpdate = async (updatedTask: Task) => {
+    try {
+      const saved = await updateTask(updatedTask)
+      setTasks(prev => prev.map(t => t.id === saved.id ? saved : t))
+    } catch { setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t)) }
   }
 
-  const handleTaskDelete = (taskId: string) => {
-    setTasks(tasks.filter(task => task.id !== taskId))
+  const handleTaskDelete = async (taskId: string) => {
+    try {
+      await deleteTask(taskId)
+    } catch { /* ignore */ } finally {
+      setTasks(prev => prev.filter(t => t.id !== taskId))
+    }
   }
 
-  const handleTaskCreate = (newTask: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const task: Task = {
-      ...newTask,
-      id: Date.now().toString(),
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+  const handleTaskCreate = async (newTask: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const saved = await createTask(newTask)
+      setTasks(prev => [...prev, saved])
+    } catch {
+      const fallback: Task = { ...newTask, id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      setTasks(prev => [...prev, fallback])
     }
-    setTasks([...tasks, task])
   }
 
   const handleCourseAdd = (course: Omit<Course, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -318,23 +105,24 @@ function AppContent() {
     // setGPARecords([...gpaRecords, newRecord])
   }
 
-  const handleSessionAdd = (session: Omit<StudySession, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newSession: StudySession = {
-      ...session,
-      id: Date.now().toString(),
-      duration: Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+  const handleSessionAdd = async (session: Omit<StudySession, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const saved = await createStudySession(session)
+      setStudySessions(prev => [saved, ...prev])
+    } catch { console.error('Failed to create session') }
+  }
+
+  const handleSessionUpdate = async (updatedSession: StudySession) => {
+    try {
+      const saved = await updateStudySession(updatedSession)
+      setStudySessions(prev => prev.map(s => s.id === saved.id ? saved : s))
+    } catch { setStudySessions(prev => prev.map(s => s.id === updatedSession.id ? updatedSession : s)) }
+  }
+
+  const handleSessionDelete = async (sessionId: string) => {
+    try { await deleteStudySession(sessionId) } catch { /* ignore */ } finally {
+      setStudySessions(prev => prev.filter(s => s.id !== sessionId))
     }
-    // setStudySessions([...studySessions, newSession])
-  }
-
-  const handleSessionUpdate = (updatedSession: StudySession) => {
-    // setStudySessions(studySessions.map(session => session.id === updatedSession.id ? updatedSession : session))
-  }
-
-  const handleSessionDelete = (sessionId: string) => {
-    // setStudySessions(studySessions.filter(session => session.id !== sessionId))
   }
 
   const handleWorkloadRecordAdd = (record: Omit<WorkloadRecord, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -367,21 +155,19 @@ function AppContent() {
   }
 
   const handleAlertCreate = (alert: Omit<BurnoutAlert, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newAlert: BurnoutAlert = {
-      ...alert,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-    // setBurnoutAlerts([...burnoutAlerts, newAlert])
+    const newAlert: BurnoutAlert = { ...alert, id: Date.now().toString(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    setBurnoutAlerts(prev => [newAlert, ...prev])
   }
 
-  const handleAlertUpdate = (updatedAlert: BurnoutAlert) => {
-    // setBurnoutAlerts(burnoutAlerts.map(alert => alert.id === updatedAlert.id ? updatedAlert : alert))
+  const handleAlertUpdate = async (updatedAlert: BurnoutAlert) => {
+    try {
+      const saved = await updateBurnoutAlertStatus(updatedAlert.id, updatedAlert.status)
+      setBurnoutAlerts(prev => prev.map(a => a.id === saved.id ? saved : a))
+    } catch { setBurnoutAlerts(prev => prev.map(a => a.id === updatedAlert.id ? updatedAlert : a)) }
   }
 
   const handleAlertDelete = (alertId: string) => {
-    // setBurnoutAlerts(burnoutAlerts.filter(alert => alert.id !== alertId))
+    setBurnoutAlerts(prev => prev.filter(a => a.id !== alertId))
   }
 
   const handleCourseGradeAdd = (grade: Omit<CourseGrade, 'id' | 'createdAt' | 'updatedAt'>) => {

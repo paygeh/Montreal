@@ -3,8 +3,8 @@ import cors from 'cors'
 import helmet from 'helmet'
 import dotenv from 'dotenv'
 import rateLimit from 'express-rate-limit'
-import { createClient } from '@supabase/supabase-js'
 import path from 'path'
+import { supabase } from './lib/supabase'
 
 // Import route modules
 import profilesRoutes from './routes/profiles'
@@ -29,11 +29,6 @@ console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'SET' : 'NOT SET')
 console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'SET' : 'NOT SET')
 console.log('All process.env keys:', Object.keys(process.env).filter(key => key.includes('SUPABASE')))
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-)
 
 // Rate limiting
 const limiter = rateLimit({
