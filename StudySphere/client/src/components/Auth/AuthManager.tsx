@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { User, AuthState } from '../../types'
 import { supabase } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase'
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>
@@ -110,6 +111,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
     if (error) {
       setAuthState(prev => ({ ...prev, isLoading: false, error: error.message }))
+    } else {
+      setAuthState(prev => ({ ...prev, isLoading: false, error: null }))
     }
   }
 
