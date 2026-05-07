@@ -57,13 +57,13 @@ function AppContent() {
     try {
       const saved = await updateTask(updatedTask)
       setTasks(prev => prev.map(t => t.id === saved.id ? saved : t))
-    } catch { setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t)) }
+    } catch (err) { console.error('[handleTaskUpdate]', err); setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t)) }
   }
 
   const handleTaskDelete = async (taskId: string) => {
     try {
       await deleteTask(taskId)
-    } catch { /* ignore */ } finally {
+    } catch (err) { console.error('[handleTaskDelete]', err) } finally {
       setTasks(prev => prev.filter(t => t.id !== taskId))
     }
   }
@@ -72,7 +72,8 @@ function AppContent() {
     try {
       const saved = await createTask(newTask)
       setTasks(prev => [...prev, saved])
-    } catch {
+    } catch (err) {
+      console.error('[handleTaskCreate]', err)
       const fallback: Task = { ...newTask, id: Date.now().toString(), status: 'pending', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
       setTasks(prev => [...prev, fallback])
     }
@@ -82,7 +83,8 @@ function AppContent() {
     try {
       const saved = await createCourse(course)
       setCourses(prev => [...prev, saved])
-    } catch {
+    } catch (err) {
+      console.error('[handleCourseAdd]', err)
       const fallback: Course = { ...course, id: Date.now().toString(), taskCount: 0, completedTasks: 0 }
       setCourses(prev => [...prev, fallback])
     }
