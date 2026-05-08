@@ -100,6 +100,31 @@ ALTER TABLE study_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE gpa_records    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE burnout_alerts ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies before recreating (safe to re-run)
+DROP POLICY IF EXISTS "own profile select" ON profiles;
+DROP POLICY IF EXISTS "own profile insert" ON profiles;
+DROP POLICY IF EXISTS "own profile update" ON profiles;
+DROP POLICY IF EXISTS "own courses select" ON courses;
+DROP POLICY IF EXISTS "own courses insert" ON courses;
+DROP POLICY IF EXISTS "own courses update" ON courses;
+DROP POLICY IF EXISTS "own courses delete" ON courses;
+DROP POLICY IF EXISTS "own assignments select" ON assignments;
+DROP POLICY IF EXISTS "own assignments insert" ON assignments;
+DROP POLICY IF EXISTS "own assignments update" ON assignments;
+DROP POLICY IF EXISTS "own assignments delete" ON assignments;
+DROP POLICY IF EXISTS "own sessions select" ON study_sessions;
+DROP POLICY IF EXISTS "own sessions insert" ON study_sessions;
+DROP POLICY IF EXISTS "own sessions update" ON study_sessions;
+DROP POLICY IF EXISTS "own sessions delete" ON study_sessions;
+DROP POLICY IF EXISTS "own gpa select" ON gpa_records;
+DROP POLICY IF EXISTS "own gpa insert" ON gpa_records;
+DROP POLICY IF EXISTS "own gpa update" ON gpa_records;
+DROP POLICY IF EXISTS "own gpa delete" ON gpa_records;
+DROP POLICY IF EXISTS "own alerts select" ON burnout_alerts;
+DROP POLICY IF EXISTS "own alerts insert" ON burnout_alerts;
+DROP POLICY IF EXISTS "own alerts update" ON burnout_alerts;
+DROP POLICY IF EXISTS "own alerts delete" ON burnout_alerts;
+
 -- Profiles
 CREATE POLICY "own profile select" ON profiles FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "own profile insert" ON profiles FOR INSERT WITH CHECK (user_id = auth.uid());
