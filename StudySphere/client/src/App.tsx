@@ -36,13 +36,19 @@ function AppContent() {
   const [courses, setCourses] = useState<Course[]>([])
   const [gpaRecords, setGpaRecords] = useState<GPARecord[]>([])
   const [studySessions, setStudySessions] = useState<StudySession[]>([])
+  const [dbError, setDbError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchTasks().then(setTasks).catch(console.error)
-    fetchCourses().then(setCourses).catch(console.error)
-    fetchGPARecords().then(setGpaRecords).catch(console.error)
-    fetchStudySessions().then(setStudySessions).catch(console.error)
-    fetchBurnoutAlerts().then(setBurnoutAlerts).catch(console.error)
+    fetchCourses()
+      .then(data => { setCourses(data); setDbError(null) })
+      .catch(err => {
+        console.error('[fetchCourses]', err)
+        setDbError(err?.message ?? 'Database error — have you run the schema in Supabase?')
+      })
+    fetchTasks().then(setTasks).catch(err => console.error('[fetchTasks]', err))
+    fetchGPARecords().then(setGpaRecords).catch(err => console.error('[fetchGPARecords]', err))
+    fetchStudySessions().then(setStudySessions).catch(err => console.error('[fetchStudySessions]', err))
+    fetchBurnoutAlerts().then(setBurnoutAlerts).catch(err => console.error('[fetchBurnoutAlerts]', err))
   }, [])
 
   const [workloadRecords] = useState<WorkloadRecord[]>([])
@@ -290,6 +296,21 @@ function AppContent() {
           </div>
         </div>
       </header>
+
+      {/* DB error banner */}
+      {dbError && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-3 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-red-800">Database not connected</p>
+            <p className="text-xs text-red-600 mt-0.5">{dbError}</p>
+            <p className="text-xs text-red-500 mt-1">Go to <strong>supabase.com → SQL Editor</strong> and run <code>StudySphere/supabase/schema.sql</code></p>
+          </div>
+          <button onClick={() => setDbError(null)} className="text-red-400 hover:text-red-600 shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 sm:pb-8">
