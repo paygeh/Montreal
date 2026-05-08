@@ -55,11 +55,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resolveSession = async (sbUser: any) => {
     try {
-      const { data: profile } = await supabase
+      const profileTimeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 3000))
+      const profileFetch = supabase
         .from('profiles')
         .select('*')
         .eq('user_id', sbUser.id)
         .single()
+        .then(({ data }) => data)
+        .catch(() => null)
+      const profile = await Promise.race([profileFetch, profileTimeout])
       return buildUser(sbUser, profile)
     } catch {
       return buildUser(sbUser, null)
@@ -67,7 +71,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      setAuthState(prev => prev.isLoading ? { ...prev, isLoading: false } : prev)
+    }, 5000)
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      clearTimeout(timeout)
       if (session?.user) {
         const user = await resolveSession(session.user)
         setAuthState({ user, isAuthenticated: true, isLoading: false, error: null })
@@ -75,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAuthState({ user: null, isAuthenticated: false, isLoading: false, error: null })
       }
     }).catch((err) => {
+      clearTimeout(timeout)
       console.warn('[auth] getSession error, stopping loader:', err)
       setAuthState(prev => ({ ...prev, isLoading: false }))
     })
