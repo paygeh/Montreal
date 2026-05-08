@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom'
-import { BookOpen, TrendingUp, Clock, BarChart3, AlertTriangle, User, LogOut, X, Zap } from 'lucide-react'
+import { BookOpen, TrendingUp, Clock, BarChart3, AlertTriangle, User, LogOut, X, Zap, Menu, Home } from 'lucide-react'
 import TaskList from './components/TaskList'
 import GPATracker from './components/GPATracker'
 import StudyTimeTracker from './components/StudyTimeTracker'
@@ -12,7 +12,7 @@ import { useAuth } from './components/Auth/AuthManager'
 import { Task, Course, GPARecord, StudySession, WorkloadRecord, OngoingProject, BurnoutAlert, CourseGrade } from './types'
 import {
   fetchTasks, createTask, updateTask, deleteTask,
-  fetchCourses,
+  fetchCourses, createCourse,
   fetchStudySessions, createStudySession, updateStudySession, deleteStudySession,
   fetchGPARecords,
   fetchBurnoutAlerts, updateBurnoutAlertStatus,
@@ -193,8 +193,8 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* Directory floating button */}
-      <div className="fixed top-6 left-6 z-40">
+      {/* Directory floating button — desktop only */}
+      <div className="hidden sm:block fixed top-6 left-6 z-40">
         <button
           onClick={() => setDrawerOpen(true)}
           className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold px-5 py-3 rounded-full shadow-lg transition-all hover:scale-105"
@@ -213,7 +213,7 @@ function AppContent() {
       )}
 
       {/* Slide-out drawer */}
-      <div className={`fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+      <div className={`fixed top-0 left-0 h-full w-full sm:w-80 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
         drawerOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
@@ -249,32 +249,42 @@ function AppContent() {
       </div>
 
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-primary-600">StudySphere</h1>
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            {/* Mobile: hamburger | Desktop: logo area */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setDrawerOpen(true)}
+                className="sm:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                aria-label="Open menu"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+              <Link to="/" className="flex items-center gap-1">
+                <h1 className="text-xl sm:text-2xl font-bold text-primary-600">StudySphere</h1>
+              </Link>
             </div>
-            <nav className="flex space-x-8">
+            {/* Desktop nav */}
+            <nav className="hidden sm:flex space-x-8">
               <Link to="/" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                 Dashboard
               </Link>
             </nav>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+            {/* Right side */}
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="hidden sm:flex items-center space-x-2">
                 <div className="h-8 w-8 bg-primary-100 rounded-full flex items-center justify-center">
                   <User className="h-4 w-4 text-primary-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-900">
-                  {user?.username || 'User'}
-                </span>
+                <span className="text-sm font-medium text-gray-900">{user?.username || 'User'}</span>
               </div>
               <button
                 onClick={logout}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                className="flex items-center gap-1 sm:gap-2 text-gray-600 hover:text-gray-900 p-2 sm:px-3 sm:py-2 rounded-md text-sm font-medium"
               >
                 <LogOut className="h-4 w-4" />
-                <span>Logout</span>
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           </div>
@@ -282,7 +292,7 @@ function AppContent() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24 sm:pb-8">
         <Routes>
           <Route path="/" element={<Dashboard tasks={tasks} courses={courses} />} />
           <Route path="/features" element={<Features />} />
@@ -356,6 +366,26 @@ function AppContent() {
           <Route path="/features/manage-user-experience" element={<UserProfile tasks={tasks} courses={courses} studySessions={studySessions} />} />
         </Routes>
       </main>
+
+      {/* Mobile bottom nav */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 flex">
+        {[
+          { label: 'Home',     path: '/',                                    icon: Home },
+          { label: 'Tasks',    path: '/features/manage-academic-tasks',      icon: BookOpen },
+          { label: 'GPA',      path: '/features/track-academic-performance', icon: TrendingUp },
+          { label: 'Study',    path: '/features/plan-study-time',            icon: Clock },
+          { label: 'More',     path: null,                                   icon: Menu },
+        ].map(({ label, path, icon: Icon }) => (
+          <button
+            key={label}
+            onClick={() => path ? navigate(path) : setDrawerOpen(true)}
+            className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-gray-500 hover:text-primary-600 active:text-primary-600 transition-colors"
+          >
+            <Icon className="h-5 w-5" />
+            <span className="text-[10px] font-medium">{label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   )
 }
@@ -396,13 +426,13 @@ function Dashboard({ tasks = [], courses = [] }: DashboardProps) {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Welcome back, {user?.username || 'Student'}!</h1>
-        <p className="text-primary-100 text-lg">Ready to boost your academic performance today?</p>
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-5 sm:p-8 text-white">
+        <h1 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">Welcome back, {user?.username || 'Student'}!</h1>
+        <p className="text-primary-100 text-sm sm:text-lg">Ready to boost your academic performance today?</p>
       </div>
 
       {/* Statistics Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-2">
             <div className="p-2 bg-blue-100 rounded-lg">

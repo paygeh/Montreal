@@ -1,8 +1,6 @@
 import { supabase } from './lib/supabase'
 import { Task, Course, StudySession, GPARecord, BurnoutAlert } from './types'
 
-const API_BASE = import.meta.env.VITE_API_BASE as string
-
 // ─── Mappers: DB (snake_case) → Frontend (camelCase) ──────────────────────────
 
 const mapCourse = (row: any): Course => ({
@@ -11,6 +9,7 @@ const mapCourse = (row: any): Course => ({
   code: row.course_code ?? undefined,
   color: row.color ?? '#6366f1',
   instructor: row.professor_name ?? undefined,
+  semester: row.semester ?? undefined,
   credits: row.credits ?? 0,
   maxGrade: 100,
   currentGrade: row.current_grade != null ? String(row.current_grade) : undefined,

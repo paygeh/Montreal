@@ -128,10 +128,10 @@ export default function TaskList({ tasks, courses, onTaskUpdate, onTaskDelete, o
   return (
     <div className="space-y-6">
       {/* Header with Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold text-gray-900">Academic Tasks</h2>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Academic Tasks</h2>
             
             {/* View Mode Toggle */}
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
@@ -163,103 +163,74 @@ export default function TaskList({ tasks, courses, onTaskUpdate, onTaskDelete, o
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4">
-            {/* Filter Dropdown */}
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
-              <select
-                value={filter}
-                onChange={(e) => {
-                  setFilter(e.target.value as any)
-                  setSelectedCourse('')
-                  setSelectedPriority('')
-                  setSelectedDueDate('')
-                }}
-                className="input w-40"
-              >
-                <option value="all">All Tasks</option>
-                <option value="course">By Course</option>
-                <option value="priority">By Priority</option>
-                <option value="dueDate">By Due Date</option>
-              </select>
+          <div className="w-full sm:w-auto flex flex-col gap-2">
+            {/* Filter + Sort row */}
+            <div className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-1.5">
+                <Filter className="h-4 w-4 text-gray-500 shrink-0" />
+                <select
+                  value={filter}
+                  onChange={(e) => {
+                    setFilter(e.target.value as any)
+                    setSelectedCourse('')
+                    setSelectedPriority('')
+                    setSelectedDueDate('')
+                  }}
+                  className="input text-sm py-1.5"
+                >
+                  <option value="all">All Tasks</option>
+                  <option value="course">By Course</option>
+                  <option value="priority">By Priority</option>
+                  <option value="dueDate">By Due Date</option>
+                </select>
+              </div>
+
+              {filter === 'course' && (
+                <select value={selectedCourse} onChange={(e) => setSelectedCourse(e.target.value)} className="input text-sm py-1.5">
+                  <option value="">All Courses</option>
+                  {courses.map(course => <option key={course.id} value={course.id}>{course.name}</option>)}
+                </select>
+              )}
+              {filter === 'priority' && (
+                <select value={selectedPriority} onChange={(e) => setSelectedPriority(e.target.value)} className="input text-sm py-1.5">
+                  <option value="">All Priorities</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              )}
+              {filter === 'dueDate' && (
+                <input type="date" value={selectedDueDate} onChange={(e) => setSelectedDueDate(e.target.value)} className="input text-sm py-1.5" />
+              )}
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm text-gray-500 shrink-0">Sort:</span>
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="input text-sm py-1.5">
+                  <option value="priority">Priority</option>
+                  <option value="dueDate">Due Date</option>
+                  <option value="title">Title</option>
+                </select>
+              </div>
             </div>
 
-            {/* Course Filter */}
-            {filter === 'course' && (
-              <select
-                value={selectedCourse}
-                onChange={(e) => setSelectedCourse(e.target.value)}
-                className="input w-48"
-              >
-                <option value="">All Courses</option>
-                {courses.map(course => (
-                  <option key={course.id} value={course.id}>{course.name}</option>
-                ))}
-              </select>
-            )}
-
-            {/* Priority Filter */}
-            {filter === 'priority' && (
-              <select
-                value={selectedPriority}
-                onChange={(e) => setSelectedPriority(e.target.value)}
-                className="input w-40"
-              >
-                <option value="">All Priorities</option>
-                <option value="high">High Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="low">Low Priority</option>
-              </select>
-            )}
-
-            {/* Due Date Filter */}
-            {filter === 'dueDate' && (
-              <input
-                type="date"
-                value={selectedDueDate}
-                onChange={(e) => setSelectedDueDate(e.target.value)}
-                className="input w-48"
-                placeholder="Select due date"
-              />
-            )}
-
-            {/* Sort By */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Sort:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="input w-32"
-              >
-                <option value="priority">Priority (High → Low)</option>
-                <option value="dueDate">Due Date (Earliest → Latest)</option>
-                <option value="title">Title (A-Z)</option>
-              </select>
-            </div>
-
-            {/* Add Course Button */}
-            {onCourseCreate && (
-              <button
-                onClick={() => setShowCourseForm(true)}
-                className="btn btn-secondary flex items-center gap-2"
-              >
+            {/* Action buttons row */}
+            <div className="flex gap-2">
+              {onCourseCreate && (
+                <button onClick={() => setShowCourseForm(true)} className="btn btn-secondary flex items-center gap-1.5 text-sm py-1.5 flex-1 sm:flex-none justify-center">
+                  <Plus className="h-4 w-4" />
+                  Add Course
+                </button>
+              )}
+              <button onClick={() => setShowNewTaskForm(true)} className="btn btn-primary flex items-center gap-1.5 text-sm py-1.5 flex-1 sm:flex-none justify-center">
                 <Plus className="h-4 w-4" />
-                Add Course
+                Add Task
               </button>
-            )}
-            {/* Add Task Button */}
-            <button
-              onClick={() => setShowNewTaskForm(true)}
-              className="btn btn-primary flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Task
-            </button>
+            </div>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4 sm:mt-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">{tasks.length}</div>
             <div className="text-sm text-gray-600">Total Tasks</div>
